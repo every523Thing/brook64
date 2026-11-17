@@ -37,7 +37,8 @@ RESERVE_OUTPUT = {("gpt-6-astra", 22000): 18500, ("gpt-6.1-sol", 44000): 36000, 
 # Real-time budget: calls are planned and admitted on the measured p90 output of each call type (Sol xhigh 44k cap
 # p90 23,907; Sol 32k cap p90 12,610; Sol edit 24k cap p90 14,608; Astra high p90 10,137; Sol select 8k cap p90 399;
 # judge 4k cap p90 236; label 2k cap p90 97) and realistic input, against the usable budget; a second, hard check keeps
-# actual spend plus the measured maximum of every call in flight within the 5,000,000 limit.
+# actual spend plus the full output cap (and a conservative input estimate) of every call in flight within the
+# 5,000,000 limit, so no prompt can go over budget whatever its outputs.
 EXPECT_OUTPUT = {("gpt-6-astra", 22000): 10200, ("gpt-6.1-sol", 44000): 24000, ("gpt-6.1-sol", 32768): 12700,
                  ("gpt-6.1-sol", 24000): 14700, ("gpt-6.1-sol", 20000): 14000, ("gpt-6.1-sol", 16384): 2500,
                  ("gpt-6.1-sol", 8192): 400, ("gpt-6.1-sol", 4096): 240, ("gpt-6.1-sol", 2000): 100,
@@ -52,7 +53,7 @@ class Estimate(float):
 
 def worst_case(model: str, text_chars: int, images: int, max_output_tokens: int) -> float:
     input_tokens = int(text_chars / CHARS_PER_TOKEN) + images * TOKENS_PER_IMAGE
-    worst = call_credits(model, input_tokens, WORST_OUTPUT.get((model, max_output_tokens), max_output_tokens))
+    worst = call_credits(model, input_tokens, max_output_tokens)  # the hard bound: output can never pass the call's cap
     expected_input = int(text_chars / 3.5) + images * 1050  # measured: a judge call with 3 images reads about 3,900 tokens
     expected = call_credits(model, expected_input, EXPECT_OUTPUT.get((model, max_output_tokens), min(max_output_tokens, WORST_OUTPUT.get((model, max_output_tokens), max_output_tokens))))
     out = Estimate(min(expected, worst))
