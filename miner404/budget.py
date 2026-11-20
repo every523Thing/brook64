@@ -28,8 +28,6 @@ def call_credits(model: str, input_tokens: int, output_tokens: int) -> float:
             + output_tokens * weights["long_output_credits_per_token" if long else "output_credits_per_token"])
 
 
-# Reserving every call's full output cap would refuse later planned steps, while real outputs stay far below the caps.
-# Reserve a typical maximum plus a margin instead of the cap. Requests (and their caps) are unchanged; only the reservation is.
 RESERVE_OUTPUT = {("gpt-6-astra", 22000): 18500, ("gpt-6.1-sol", 44000): 36000, ("gpt-6.1-sol", 32768): 24000,
                   ("gpt-6.1-sol", 8192): 2048}
 
